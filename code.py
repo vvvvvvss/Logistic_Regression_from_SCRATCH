@@ -1,6 +1,11 @@
-class LinearRegression:
+import numpy as np
 
-    def __init__(self, lr = 0.001, n_iters=1000):
+def sigmoid(x):
+    return 1/(1+np.exp(-x))
+
+class LogisticRegression():
+
+    def __init__(self, lr=0.001, n_iters=1000):
         self.lr = lr
         self.n_iters = n_iters
         self.weights = None
@@ -12,44 +17,38 @@ class LinearRegression:
         self.bias = 0
 
         for _ in range(self.n_iters):
-            y_pred = np.dot(X, self.weights) + self.bias
+            linear_pred = np.dot(X, self.weights) + self.bias
+            predictions = sigmoid(linear_pred)
 
-            dw = (1/n_samples) * np.dot(X.T, (y_pred-y))
-            db = (1/n_samples) * np.sum(y_pred-y)
+            dw = (1/n_samples) * np.dot(X.T, (predictions - y))
+            db = (1/n_samples) * np.sum(predictions-y)
 
-            self.weights = self.weights - self.lr * dw
-            self.bias = self.bias - self.lr * db
+            self.weights = self.weights - self.lr*dw
+            self.bias = self.bias - self.lr*db
+
 
     def predict(self, X):
-        y_pred = np.dot(X, self.weights) + self.bias
-        return y_pred
+        linear_pred = np.dot(X, self.weights) + self.bias
+        y_pred = sigmoid(linear_pred)
+        class_pred = [0 if y<=0.5 else 1 for y in y_pred]
+        return class_pred
+
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn import datasets
 import matplotlib.pyplot as plt
-from LinearRegression import LinearRegression
 
-X, y = datasets.make_regression(n_samples=100, n_features=1, noise=20, random_state=4)
+
+bc = datasets.load_breast_cancer()
+X, y = bc.data, bc.target
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1234)
 
-fig = plt.figure(figsize=(8,6))
-plt.scatter(X[:, 0], y, color = "b", marker = "o", s = 30)
-plt.show()
+clf = LogisticRegression(lr=0.01)
+clf.fit(X_train,y_train)
+y_pred = clf.predict(X_test)
 
-reg = LinearRegression(lr=0.01)
-reg.fit(X_train,y_train)
-predictions = reg.predict(X_test)
+def accuracy(y_pred, y_test):
+    return np.sum(y_pred==y_test)/len(y_test)
 
-def mse(y_test, predictions):
-    return np.mean((y_test-predictions)**2)
-
-mse = mse(y_test, predictions)
-print(mse)
-
-y_pred_line = reg.predict(X)
-cmap = plt.get_cmap('viridis')
-fig = plt.figure(figsize=(8,6))
-m1 = plt.scatter(X_train, y_train, color=cmap(0.9), s=10)
-m2 = plt.scatter(X_test, y_test, color=cmap(0.5), s=10)
-plt.plot(X, y_pred_line, color='black', linewidth=2, label='Prediction')
-plt.show()
+acc = accuracy(y_pred, y_test)
+print(acc)
